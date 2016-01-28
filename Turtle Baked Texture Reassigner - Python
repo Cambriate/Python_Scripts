@@ -1,0 +1,107 @@
+import pymel.core as pm
+import maya.mel as mel
+
+
+
+###################################################################
+'''
+This script is written in Python for use with Maya 2016. It was created by Ivan Spalla and published on 1.21.2016. It is free for use under Creative Commons Licensing.
+
+Use this script once you have baked items in a scene using the TURTLE renderer within Maya. Please use the shape flag in the name of your bakes, as this script is heavily dependant on it. Select objects 
+that need to have textures applied, specificy the file folder in which your baked textures can be found, specificy the file prefix, and simply click Assign.
+
+Any questions can be directed to spallam42@gmail.com
+
+
+'''
+###################################################################
+def AssignTextures(*args):
+    
+    mel.eval('$s=`getenv "maya_location"`;')
+    
+    #Get All Variables from User
+    definedPath = folderName.getText() #String - Name of Folder all textures are located in
+    definedPrefix = prefix.getText() #String - Prefix of TExture Name
+
+    #rootDir = cmds.workspace( q=True, rd=True )
+    filetype_v = fileType.getValue()
+     
+    
+    #Find all shape nodes from the selection and clear history
+    selectedObjs = pm.ls(selection=True)
+    pm.delete(selectedObjs, ch=1)
+    individuals = pm.listRelatives(selectedObjs, shapes = True)
+    allChildren = pm.listRelatives(selectedObjs, ad=True)
+    groupedShapes = pm.listRelatives(allChildren, shapes =True)
+    shapes = individuals + groupedShapes
+    
+ 
+    
+    for ObjShape in shapes: #This block will be ran to prepare each shape and its attached color attribute.
+		#Create New Material
+        MatName = ObjShape + '_Mat'
+        if(pm.objExists(MatName)):
+			pm.delete(MatName)
+			
+		#Create New Texture
+        TexName = ObjShape + '_Tex'
+        if(pm.objExists(TexName)):
+			pm.delete(TexName)
+		
+       
+		#Create and assign the New Texture
+        shader=pm.shadingNode("lambert",asShader=True, name = MatName)
+        file_node=pm.shadingNode("file",asTexture=True, name = TexName)
+        pm.connectAttr('%s.outColor' %file_node, '%s.color' %shader)
+        pm.setAttr(file_node + '.fileTextureName','sourceimages/turtle/bakedTextures/' + definedPath +'/' + definedPrefix +ObjShape+'.'+ filetype_v)
+
+        pm.select(ObjShape)
+        pm.hyperShade(assign=MatName)
+        
+
+
+########################################USER INPUT ############################################################
+window = pm.window(width = 400, title = "Turtle Baked Texture Assigner", iconName = 'TBTA')
+pm.frameLayout(label = 'Instructions')
+pm.text(label = '\n Select all objects which have baked textures that have yet to be assigned and name the folder they have been saved into below. \n')
+
+
+pm.frameLayout( label='File Folder Name (files should be within sourceimages)' )
+pm.rowColumnLayout( numberOfColumns=2, columnAttach=(1, 'left', 0), columnWidth=[(1, 200), (2, 200)] )
+pm.text( label='turtle\\bakedTextures\\' )
+folderName = pm.textField()
+pm.textField(folderName, edit = True)
+pm.setParent('..')
+pm.text(label = '\n ')
+
+
+pm.frameLayout( label= 'File Prefix')
+pm.rowColumnLayout(numberOfColumns=2, columnAttach=(1, 'left',0), columnWidth=[(1,300), (2, 200)])
+pm.text(label='Enter the file prefix which appears before the shape \n name on the image file; \n It should be similar to "baked_beauty_"')
+prefix = pm.textField()
+pm.textField(prefix, query = True, edit = True)
+pm.setParent('..')
+pm.text(label = '\n ')
+
+pm.frameLayout( label= 'Output File Type')
+pm.rowColumnLayout( numberOfColumns=2, columnAttach=(1, 'left', 0), columnWidth=[(1, 100), (2, 60)] )
+fileType= pm.optionMenu(label='File Types')
+pm.setParent('..')
+
+pm.menuItem( label='tga' )
+pm.menuItem( label='exr' )
+pm.menuItem( label='tif' )
+pm.menuItem( label='iff' )
+pm.menuItem( label='bmp' )
+pm.menuItem( label='png' )
+pm.text(label = '\n ')
+
+
+pm.frameLayout( label= 'Assign Textures')
+pm.button(label = 'Assign', command = AssignTextures, width = 60)
+pm.text(label = '\n ')
+
+pm.button(label = 'Close', command = ('pm.deleteUI(\"' + window + '\", window=True)'), width = 60)
+pm.text(label = '\n ')
+
+pm.showWindow()

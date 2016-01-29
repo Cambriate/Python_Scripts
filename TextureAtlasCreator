@@ -1,12 +1,12 @@
 import pymel.core as pm
-import maya.cmds as cmds
 import maya.mel as mel
 import math
+import time
 
 
 ###################################################################
 '''
-This script is written in Python for use with Maya 2016. It was created by Ivan Spalla and published on 1.26.2016. It is free for use under Creative Commons Licensing.
+This script is written in Python for use with Maya 2016. It was created by Ivan Spalla and published on 1.29.2016. It is free for use under Creative Commons Licensing.
 
 Use this script to combine multiple textures and create a texture atlas. 
 
@@ -55,7 +55,8 @@ def CreateTexAtlas(*args):
     bothSets_v = bothSets.getSelect() #keep both and hide the originals
     
     #Get information about project and file - for storing the created textures. 
-    rootDir = cmds.workspace( q=True, rd=True )
+    rootDir = pm.workspace( q=True, rd=True )
+    rootDir = pm.workspace( q=True, rd=True )
     filetype_v = fileType.getValue()
     
     placeNodes = []
@@ -328,8 +329,10 @@ def CreateTexAtlas(*args):
     pm.delete('UniqueRefPlane')
     
     if(oneTex_v):
+        time.sleep(3)
         pm.sysFile( CP, delete=True )
-        pm.sysFile( AP, delete=True )  
+        pm.sysFile( AP, delete=True )
+
         
     if(oneMesh_v): #Delete Original Selection, and keep new object.
         pm.delete(selectedObjs)

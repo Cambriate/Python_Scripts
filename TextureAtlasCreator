@@ -162,8 +162,8 @@ def CreateTexAtlas(*args):
                             NewV= OriginalV*repeatValue
                             
                             #Assign new value to repeat U and V
-                            pm.setAttr(placeNode_C[0] + '.repeatV', NewU)  
-                            pm.setAttr(placeNode_C[0] + '.repeatU', NewV)   
+                            pm.setAttr(placeNode_C[0] + '.repeatV', NewV)  
+                            pm.setAttr(placeNode_C[0] + '.repeatU', NewU)   
                                                        
         
         except: 
@@ -287,8 +287,8 @@ def CreateTexAtlas(*args):
                         NewV= OriginalV/repeatValue
                         
                         #Assign OLD value to repeat U and V
-                        pm.setAttr(placeNode_C[0] + '.repeatV', NewU)  
-                        pm.setAttr(placeNode_C[0] + '.repeatU', NewV) 
+                        pm.setAttr(placeNode_C[0] + '.repeatV', NewV)  
+                        pm.setAttr(placeNode_C[0] + '.repeatU', NewU) 
     
         except: 
     
@@ -321,6 +321,7 @@ def CreateTexAtlas(*args):
         file_node=pm.shadingNode("file",asTexture=True, name = MatName+'_Tex')
         pm.connectAttr('%s.outColor' %file_node, '%s.color' %shader)
         pm.setAttr(file_node + '.fileTextureName','sourceimages/' + name_v +'.'+ filetype_v)
+        print("New File Should be attached")
     
     pm.select(surfName_v)
     pm.hyperShade(assign=MatName )

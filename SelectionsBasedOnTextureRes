@@ -1,0 +1,70 @@
+import pymel.core as pm
+import maya.mel as mel
+
+###################################################################
+'''
+This script is written in Python for use with Maya 2016. It was created by Ivan Spalla and published on 2.17.2016. It is free for use under Creative Commons Licensing.
+
+Use this script to create sets based on the object's texture's dimensions. This is meant to be used on 
+objects which have textures.
+
+Creates Quick Selection sets based on image resolution. 
+
+Any questions can be directed to spallam42@gmail.com
+
+
+'''
+
+###################################################################
+
+
+mel.eval('$s=`getenv "maya_location"`;')
+    
+resGroups = []
+TexResList = []
+ 
+
+#Find all shape nodes from the selection and clear history
+selectedObjs = pm.ls(selection=True)
+pm.delete(selectedObjs, ch=1)
+individuals = pm.listRelatives(selectedObjs, shapes = True)
+allChildren = pm.listRelatives(selectedObjs, ad=True)
+groupedShapes = pm.listRelatives(allChildren, shapes =True)
+shapes = individuals + groupedShapes
+
+for ObjShape in shapes: #This block will be ran to prepare each shape and its attached color attribute.
+
+    try: #This block will be ran for shapes with shaders. It filters out objects with shape, but no mesh. 
+        #Get Shading Engine
+        shader = pm.listConnections(ObjShape, type='shadingEngine')
+        print(shader)
+                
+        #Get material Info
+        sgInfo = shader[0].outputs(type = 'materialInfo')
+        #get the tex file
+        fileNode = sgInfo[0].connections()
+        surfMat = fileNode[1]
+
+        Obj_Color = pm.listConnections(surfMat+'.color')
+
+        width = int(pm.getAttr(Obj_Color[0] + '.outSizeX'))
+        height = int(pm.getAttr(Obj_Color[0] + '.outSizeY'))
+        
+        #Concat string 
+        TexRes = str(width) + "x" + str(height)
+        print(TexRes)
+        
+        if TexRes not in TexResList:
+            TexResList.append(TexRes)
+            #create new set if one does not exist
+            pm.sets(ObjShape, name = "Set_" +TexRes, text= 'gCharacterSet')
+            #then add it to the array
+        else:
+            pm.sets("Set_" + TexRes, forceElement=ObjShape)
+        
+
+		
+    except: 
+        pass
+    #End of For Looop
+

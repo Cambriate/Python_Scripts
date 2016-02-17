@@ -1,0 +1,91 @@
+import pymel.core as pm
+
+##########################################################
+'''
+This script is written in Python for use with Maya 2016. It was created by Ivan Spalla and 
+published on 2.17.2016. It is free for use under Creative Commons Licensing.
+
+Use this script to change the values of all selected lights and child lights. 
+
+Supports common point and area light values. 
+
+Any questions can be directed to spallam42@gmail.com
+
+
+'''
+
+###################################################################
+    
+def ApplyValues(*args): 
+    
+    #Find all shape nodes from the selection and clear history
+    selectedObjs = pm.ls(selection=True)
+    pm.delete(selectedObjs, ch=1)
+    individuals = pm.listRelatives(selectedObjs, shapes = True)
+    allChildren = pm.listRelatives(selectedObjs, ad=True)
+    groupedShapes = pm.listRelatives(allChildren, shapes =True)
+    shapes = individuals + groupedShapes
+    
+    LightIntensity_v = LightIntensity.getValue()
+    ShadowColor_v = ShadowColor.getRgbValue()
+    ShadowRays_v = ShadowRays.getValue()
+    RayDepthLimit_v = RayDepthLimit.getValue()
+    LightRadius_v = LightRadius.getValue()
+    
+      
+    
+    for light in shapes: 
+        pm.setAttr(light + '.intensity', LightIntensity_v)
+        pm.setAttr(light + '.shadowColor', ShadowColor_v)
+        print(str(ShadowColor_v))
+        pm.setAttr(light + '.shadowRays', ShadowRays_v)
+        pm.setAttr(light + '.rayDepthLimit', RayDepthLimit_v)
+        
+        print(light)
+        
+        pm.setAttr(light + '.lightRadius', LightRadius_v)
+   
+
+#END OF FOR LOOP. Operations on each shape have ended. 
+
+
+########################################USER INPUT ############################################################
+LightAdjustmentScript = pm.window(width = 400, title = "LightAdjuster", iconName = 'LA')
+pm.frameLayout(label = 'Instructions')
+pm.text(label = '\n Select multiple lights and change their values \n')
+
+
+
+pm.frameLayout( label='Light Intensity' )
+pm.columnLayout()
+LightIntensity = pm.floatSliderGrp(label = 'Light Intensity', field=True, minValue=0.00, maxValue=10.00, value=1.0, fieldMinValue = 0.0, fieldMaxValue = 30.0, step=.01 )
+pm.text(label = '\n ')
+
+
+
+pm.frameLayout( label='Shadow Color' )
+pm.columnLayout()
+ShadowColor = pm.colorSliderGrp( label='Shadow Color', rgb=(0, 0 , 0) )
+pm.text(label = '\n ')
+
+
+pm.frameLayout( label='Shadow Rays' )
+pm.columnLayout()
+ShadowRays = pm.intSliderGrp(label = 'Shadow Rays', field=True, minValue=0, maxValue=100, value=40, fieldMinValue = 0, fieldMaxValue = 100, step=1 )
+pm.text(label = '\n ')
+
+pm.frameLayout( label='Ray Depth Limit' )
+pm.columnLayout()
+RayDepthLimit = pm.intSliderGrp(label = 'Shadow Rays', field=True, minValue=0, maxValue=40, value=5, fieldMinValue = 0, fieldMaxValue = 40, step=1 )
+pm.text(label = '\n ')
+
+pm.frameLayout( label='Light Radius (Point Light)' )
+pm.columnLayout()
+LightRadius = pm.floatSliderGrp(label = 'Light Radius', field=True, minValue=0.00, maxValue=1.00, value=0.0, fieldMinValue = 0.0, fieldMaxValue = 1.0, step=.01 )
+pm.text(label = '\n ')
+
+pm.frameLayout( label= 'Apply to Selected Lights')
+pm.button(label = 'Apply', command = ApplyValues)
+pm.text(label = '\n ')
+
+pm.showWindow()

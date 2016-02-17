@@ -6,7 +6,7 @@ import time
 
 ###################################################################
 '''
-This script is written in Python for use with Maya 2016. It was created by Ivan Spalla and published on 1.29.2016. It is free for use under Creative Commons Licensing.
+This script is written in Python for use with Maya 2016. It was created by Ivan Spalla and published on 2.2.2016. It is free for use under Creative Commons Licensing.
 
 Use this script to combine multiple textures and create a texture atlas. 
 

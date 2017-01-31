@@ -27,6 +27,7 @@ Any questions can be directed to spallam42@gmail.com
 
 ###################################################################
 def CreateTexAtlas(*args):
+    start = time.time()
     
     mel.eval('$s=`getenv "maya_location"`;')
     global Alpha_P
@@ -204,25 +205,29 @@ def CreateTexAtlas(*args):
     if(remakeUVs_v):
         
             if(resizeUVs_v):
-                pm.polyMultiLayoutUV(sc=1, rbf = 2, lm = 1, l=2, ou = 0, ov = 0, sv = 1, su= 1, psc = 2, gu=1, gv=1, ps=.5)
+                pm.polyMultiLayoutUV(sc=1, rbf = 1, lm = 1, l=2, ou = 0, ov = 0, sv = 1, su= 1, psc = 2, gu=1, gv=1, ps=0.05, fr=True)
+                pm.polyMultiLayoutUV(sc=1, rbf = 1, lm = 1, l=2, ou = 0, ov = 0, sv = 1, su= 1, psc = 2, gu=1, gv=1, ps=0.05, fr = True)
+                pm.polyMultiLayoutUV(sc=1, rbf = 1, lm = 1, l=2, ou = 0, ov = 0, sv = 1, su= 1, psc = 2, gu=1, gv=1, ps=0.05, fr = True)
 
         
             else:
-                pm.polyMultiLayoutUV(sc=1, rbf = 2, lm = 1, l=2, ou = 0, ov = 0, sv = 1, su= 1, psc = 0, gu=1, gv=1, ps=.5)
+                pm.polyMultiLayoutUV(sc=1, rbf = 1, lm = 1, l=2, ou = 0, ov = 0, sv = 1, su= 1, psc = 0, gu=1, gv=1, ps=0.05, fr=True)
+                pm.polyMultiLayoutUV(sc=1, rbf = 1, lm = 1, l=2, ou = 0, ov = 0, sv = 1, su= 1, psc = 0, gu=1, gv=1, ps=0.05, fr=True)
+                pm.polyMultiLayoutUV(sc=1, rbf = 1, lm = 1, l=2, ou = 0, ov = 0, sv = 1, su= 1, psc = 0, gu=1, gv=1, ps=0.05, fr=True)
 
  
     #Combine the Textures into one Texture using baking.
     if(oneTex_v): 
-        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, ss=3, ft=0, mh=res_v, mw=res_v, so=0, msd=0,fs=1.0, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Color', max=1, sp='tangent', mm=1, ff='jpg')
-        pm.surfaceSampler(t=surfName_v, mapOutput='alpha', source=shapes, ss=3, ft=0, mh=res_v, mw=res_v, so=0, msd=0,fs=1.0, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Alpha', max=1, sp='tangent', mm=1, ff='jpg')
+        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, ss=3, ft=0, mh=res_v, mw=res_v, so=0, fs=0, os=0, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Color', max=1, sp='tangent', mm=1, ff='jpg')
+        pm.surfaceSampler(t=surfName_v, mapOutput='alpha', source=shapes, ss=3, ft=0, mh=res_v, mw=res_v, so=0, fs=0, os=0, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Alpha', max=1, sp='tangent', mm=1, ff='jpg')
         mel.eval('system("start "+$s+ "/bin/imconvert "+$Color_P+" "+$Alpha_P+" -compose copy-opacity -composite "+$RGBA_P);')
 
     if(twoTex_v):
-        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, ss=3, ft=0, mh=res_v, mw=res_v, so=0, msd=0,fs=1.0, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Color', max=1, sp='tangent', mm=1, ff=filetype_v)
-        pm.surfaceSampler(t=surfName_v, mapOutput='alpha', source=shapes, ss=3, ft=0, mh=res_v, mw=res_v, so=0, msd=0,fs=1.0, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v +'_Alpha', max=1, sp='tangent', mm=1, ff=filetype_v)
+        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, ss=3, ft=0, mh=res_v, mw=res_v, so=0, fs=0, os=0, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Color', max=1, sp='tangent', mm=1, ff=filetype_v)
+        pm.surfaceSampler(t=surfName_v, mapOutput='alpha', source=shapes, ss=3, ft=0, mh=res_v, mw=res_v, so=0, fs=0, os=0, sm=0, fn=rootDir +'/sourceimages/'+name_v +'_Alpha', max=1, sp='tangent', mm=1, ff=filetype_v)
     
     if(difTex_v):
-        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, ss=3, ft=0, mh=res_v, mw=res_v, so=0, msd=0,fs=1.0, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v, max=1, sp='tangent', mm=1, ff=filetype_v)
+        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, ss=3, ft=0, mh=res_v, mw=res_v, so=0, fs=0, os=0, sm=0, fn=rootDir +'/sourceimages/'+name_v, max=1, sp='tangent', mm=1, ff=filetype_v)
        
     #Cleanup w/ if statements
     placeNodes = []
@@ -341,7 +346,9 @@ def CreateTexAtlas(*args):
     if(bothSets_v): #Hide Original Selection, and keep new object.
         pm.hide(selectedObjs)
         
-        
+    end = time.time()
+    
+    print(end-start)
 
 
 ########################################USER INPUT ############################################################

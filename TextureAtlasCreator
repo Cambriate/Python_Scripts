@@ -84,6 +84,11 @@ def CreateTexAtlas(*args):
     groupedShapes = pm.listRelatives(allChildren, shapes =True)
     shapes = individuals + groupedShapes
     
+    #Duplicate Shapes to be manipulated
+    duplicatedObjs = pm.duplicate(shapes)
+    duplicatedObjs = pm.listRelatives(duplicatedObjs, shapes = True)
+    pm.select(clear=True)
+    
     #Create Plane to be grabbed and used when resizing UVs
     pm.polyPlane(n='UniqueRefPlane', sx=1, sy = 1, w = 10, h = 10)
     
@@ -97,7 +102,7 @@ def CreateTexAtlas(*args):
     x = 0
     y = 0
     
-    for ObjShape in shapes: #This block will be ran to prepare each shape and its attached color attribute.
+    for ObjShape in duplicatedObjs: #This block will be ran to prepare each shape and its attached color attribute.
 
         try: #This block will be ran for shapes with shaders. It filters out objects with shape, but no mesh. 
             shaderTracker = []
@@ -125,76 +130,36 @@ def CreateTexAtlas(*args):
                     
                     
             if(len(allTex) == 0):#There is no Color or Trans material connection. 
-                if(AutoUnwrap_v):
+                if(remakeUVs_v):
                     pm.polyAutoProjection(ObjShape)
-                    
-            else: #Color and Trans Share the same material Connection
-                
-                for tex in allTex:
-                    
-                    #get the place2dTex or 3d node
-                    placeNode_C = pm.listConnections(tex, type = ['place2dTexture', 'place3dTexture'])
 
-                    if(len(placeNode_C) == 0):
-                        place2d = pm.shadingNode("place2dTexture", asUtility=True, name=tex[0]+'_2D')
-                        pm.connectAttr('%s.outUV' %place2d, '%s.uvCoord' %tex[0])
-                        placeNode_C=pm.listConnections(tex[0], type = ['place2dTexture', 'place3dTexture'])               
-                        
-
-                    if(pm.objectType( placeNode_C[0], isType='place3dTexture' )):
-                        pm.convertSolidTx(ObjShape, Obj_Color, rx=1024, ry=1024, fil= 'jpg', fileImageName=Obj_Color[0]+'_Converted.jpg')
-                        file_node=pm.shadingNode("file",asTexture=True, name = Obj_Color[0]+'_Color')
-                        pm.disconnectAttr(Obj_Color[0] +'.outColor', surfMat +'.color')
-                        pm.connectAttr('%s.outColor' %file_node, '%s.color' %surfMat)
-                        pm.setAttr(file_node + '.fileTextureName','sourceimages/' + Obj_Color[0] +'_Converted.jpg')
-                        place2d = pm.shadingNode("place2dTexture", asUtility=True, name=Obj_Color[0]+'_2D')
-                        pm.connectAttr('%s.outUV' %place2d, '%s.uvCoord' %file_node)
-                        Obj_Color = file_node
-                        placeNode_C=pm.listConnections(Obj_Color, type = ['place2dTexture', 'place3dTexture'])  
-                            
-                    if placeNode_C[0] not in placeNodes:
-                        placeNodes.append(placeNode_C[0])
-                        
-                        if(pm.objectType( placeNode_C[0], isType='place2dTexture' )):
-                            #Find and store values for the current U and V repetition of the texture.  
-                            OriginalV=pm.getAttr(placeNode_C[0] + '.repeatV')
-                            OriginalU=pm.getAttr(placeNode_C[0] + '.repeatU')
-                            NewU= OriginalU*repeatValue
-                            NewV= OriginalV*repeatValue
-                            
-                            #Assign new value to repeat U and V
-                            pm.setAttr(placeNode_C[0] + '.repeatV', NewV)  
-                            pm.setAttr(placeNode_C[0] + '.repeatU', NewU)   
-                                                       
-        
         except: 
     
            pass #this will move to the very end     
         
-         
-               
-        #Layout Mesh UVs into a corner
-        pm.polyAutoProjection('UniqueRefPlane')
-        pm.select('UniqueRefPlane', ObjShape)
-        #Determine U & V offsets
-        offsetU = u*uvScale
-        offsetV = v*uvScale
-        
-        
-        #ou and ov are offsets and deal with location. sv and su deal with the size of the uv set
-        pm.polyMultiLayoutUV(sc=1, rbf = 0, lm = 0, l=0, ou = offsetU, ov = offsetV, sv = uvScale, su= uvScale)    
-        
-        if u < (repeatValue-1):
-            u+=1
-        else:
-            u=0
-            v+=1
+        if not AutoUnwrap_v:
+                   
+            #Layout Mesh UVs into a corner
+            pm.polyAutoProjection('UniqueRefPlane')
+            pm.select('UniqueRefPlane', ObjShape)
+            #Determine U & V offsets
+            offsetU = u*uvScale
+            offsetV = v*uvScale
+            
+            
+            #ou and ov are offsets and deal with location. sv and su deal with the size of the uv set
+            pm.polyMultiLayoutUV(sc=1, rbf = 0, lm = 0, l=0, ou = offsetU, ov = offsetV, sv = uvScale, su= uvScale)    
+            
+            if u < (repeatValue-1):
+                u+=1
+            else:
+                u=0
+                v+=1
         
     #END OF FOR LOOP. Operations on each shape have ended. 
 
-    #Duplicate and combine Objects to create target for baking. 
-    duplicatedObjs = pm.duplicate(shapes)
-    pm.select(clear=True)
+    #Combine Objects to create target for baking. 
+
     pm.select(duplicatedObjs)
     pm.polyUnite(n=surfName_v)
     pm.delete(surfName_v, ch=1)
@@ -218,91 +183,20 @@ def CreateTexAtlas(*args):
  
     #Combine the Textures into one Texture using baking.
     if(oneTex_v): 
-        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, ss=3, ft=0, mh=res_v, mw=res_v, so=0, fs=0, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Color', max=1, sp='tangent', mm=1, ff='jpg')
-        pm.surfaceSampler(t=surfName_v, mapOutput='alpha', source=shapes, ss=3, ft=0, mh=res_v, mw=res_v, so=0, fs=0, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Alpha', max=1, sp='tangent', mm=1, ff='jpg')
+        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, ugn = 1, msd = 0, ss=1, ft=0, mh=res_v, mw=res_v, so=0, fs=1, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Color', max=1, sp='tangent', mm=1, ff='jpg')
+        pm.surfaceSampler(t=surfName_v, mapOutput='alpha', source=shapes, ugn = 1, msd = 0, ss=1, ft=0, mh=res_v, mw=res_v, so=0, fs=1, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Alpha', max=1, sp='tangent', mm=1, ff='jpg')
         mel.eval('system("start "+$s+ "/bin/imconvert "+$Color_P+" "+$Alpha_P+" -compose copy-opacity -composite "+$RGBA_P);')
 
     if(twoTex_v):
-        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, ss=3, ft=0, mh=res_v, mw=res_v, so=0, fs=0, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Color', max=1, sp='tangent', mm=1, ff=filetype_v)
-        pm.surfaceSampler(t=surfName_v, mapOutput='alpha', source=shapes, ss=3, ft=0, mh=res_v, mw=res_v, so=0, fs=0, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v +'_Alpha', max=1, sp='tangent', mm=1, ff=filetype_v)
+        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, ugn = 1, msd = 0, ss=1, ft=0, mh=res_v, mw=res_v, so=0, fs=1, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Color', max=1, sp='tangent', mm=1, ff=filetype_v)
+        pm.surfaceSampler(t=surfName_v, mapOutput='alpha', source=shapes, ugn = 1, msd = 0, ss=1, ft=0, mh=res_v, mw=res_v, so=0, fs=1, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v +'_Alpha', max=1, sp='tangent', mm=1, ff=filetype_v)
     
     if(difTex_v):
-        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, ss=3, ft=0, mh=res_v, mw=res_v, so=0, fs=0, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v, max=1, sp='tangent', mm=1, ff=filetype_v)
+        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, ugn = 1, msd = 0, ss=1, ft=0, mh=res_v, mw=res_v, so=0, fs=1, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v, max=1, sp='tangent', mm=1, ff=filetype_v)
        
     #Cleanup w/ if statements
     placeNodes = []
-    
-    for ObjShape in shapes: #This block will be ran to prepare each shape and its attached color attribute.
-
-        #Determine U & V offsets
-        offsetU = x*uvScale
-        offsetV = y*uvScale
-        
-        
-        #ou and ov are offsets and deal with location. sv and su deal with the size of the uv set - Move the reference plane to where the atlased uvs for each shape are
-        pm.select('UniqueRefPlane')
-        pm.polyMultiLayoutUV(sc=1, rbf = 0, lm = 0, l=0, ou = offsetU, ov = offsetV, sv = uvScale, su= uvScale)    
-        
-        if x < (repeatValue-1):
-            x+=1
-        else:
-            x=0
-            y+=1
-            
-        #Put the UVs back where they were - using the reference plane to maintain spacing. 
-        pm.select('UniqueRefPlane', ObjShape)
-        #ou and ov are offsets and deal with location. sv and su deal with the size of the uv set
-        pm.polyMultiLayoutUV(sc=1, rbf = 0, lm = 0, l=0, ou = 0, ov = 0, sv = 1, su= 1)  
-        try:
-            shaderTracker = []
-            allTex = []
-            #Get Shading Engine
-            shaders = pm.listConnections(ObjShape, type='shadingEngine')
-            
-            for shader in shaders:
-                if shader not in shaderTracker:
-                    shaderTracker.append(shader)
-                    
-                    #Get material Info
-                    sgInfo = shader.outputs(type = 'materialInfo')
-                    #get the tex file
-                    fileNode = sgInfo[0].connections()
-                    surfMat = fileNode[1]
-            
-                    Obj_Trans = pm.listConnections(surfMat+'.transparency')
-                    Obj_Color = pm.listConnections(surfMat+'.color')
-
-                    if(len(Obj_Trans)>0):
-                        allTex.append(Obj_Trans)
-                    if(len(Obj_Color)>0):
-                        allTex.append(Obj_Color)
-                              
-                for tex in allTex:
-                    
-                    #get the place2dTex or 3d node
-                    placeNode_C = pm.listConnections(tex, type = 'place2dTexture')
-                                                  
-                    if placeNode_C[0] not in placeNodes2:
-                        placeNodes2.append(placeNode_C[0])
-                                               
-                        #Find and store values for the current U and V repetition of the texture.  
-                        OriginalV=pm.getAttr(placeNode_C[0] + '.repeatV')
-                        OriginalU=pm.getAttr(placeNode_C[0] + '.repeatU')
-                        NewU= OriginalU/repeatValue
-                        NewV= OriginalV/repeatValue
-                        
-                        #Assign OLD value to repeat U and V
-                        pm.setAttr(placeNode_C[0] + '.repeatV', NewV)  
-                        pm.setAttr(placeNode_C[0] + '.repeatU', NewU) 
-    
-        except: 
-    
-           pass #this will move to the very end
-                        
-
-
-    #END OF FOR LOOP. Operations on each shape have ended. 
-    
+      
     #Create and assign the New Texture
     MatName = name_v+'_MAT'
     shader=pm.shadingNode("lambert",asShader=True, name = MatName)
@@ -311,12 +205,14 @@ def CreateTexAtlas(*args):
     if(oneTex_v):
         file_node=pm.shadingNode("file",asTexture=True, name = MatName+'_Tex')
         pm.connectAttr('%s.outColor' %file_node, '%s.color' %shader)
+        pm.setAttr(file_node + '.colorSpace' , 'sRGB', type='string')
         pm.setAttr(file_node + '.fileTextureName','sourceimages/' + name_v +'.'+ filetype_v)
         pm.connectAttr('%s.outTransparency' %file_node, '%s.transparency' %shader)
         
     if(twoTex_v):
         file_node=pm.shadingNode("file",asTexture=True, name = MatName+'_Color')
         pm.connectAttr('%s.outColor' %file_node, '%s.color' %shader)
+        pm.setAttr(file_node + '.colorSpace' , 'sRGB', type='string')
         pm.setAttr(file_node + '.fileTextureName','sourceimages/' + name_v +'_Color.'+ filetype_v)
         alpha_node=pm.shadingNode("file",asTexture=True, name = MatName+'_Alpha')
         pm.connectAttr('%s.outTransparency' %alpha_node, '%s.transparency' %shader)
@@ -420,6 +316,7 @@ pm.setParent( '..' )
 pm.text(label = '\n ')
 
 pm.frameLayout( label='Optimize UV spacing for new objects?' )
+pm.text(label = 'If yes, UVs will be scrambled, but take up maximum space. If no, UVs will be kept in "quilted" looking grid.')
 pm.rowLayout( numberOfColumns=2, columnWidth2=(50, 50), adjustableColumn=2, columnAlign=(1, 'both'), columnAttach=[(1, 'left', 0), (2, 'right', 0)] )
 OptUVs = pm.radioCollection()
 remakeUVs = pm.radioButton(label='Yes')
@@ -428,6 +325,7 @@ pm.setParent( '..' )
 pm.text(label = '\n ')
 
 pm.frameLayout( label='Resize UVs in world space?' )
+pm.text(label = 'If above is enabled, larger objects will be granted more UV space. Only applicable if above is "yes".')
 pm.rowLayout( numberOfColumns=2, columnWidth2=(50, 50), adjustableColumn=2, columnAlign=(1, 'both'), columnAttach=[(1, 'left', 0), (2, 'right', 0)] )
 OptUVs = pm.radioCollection()
 resizeUVs = pm.radioButton(label='Yes')

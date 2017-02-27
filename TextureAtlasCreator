@@ -290,11 +290,11 @@ pm.rowColumnLayout( numberOfColumns=2, columnAttach=(1, 'left', 0), columnWidth=
 fileType= pm.optionMenu(label='File Types')
 pm.setParent('..')
 
-pm.menuItem( label='DDS' )
-pm.menuItem( label='PSD' )
-pm.menuItem( label='PNG' )
-pm.menuItem( label='TGA' )
-pm.menuItem( label='TIF' )
+pm.menuItem( label='dds' )
+pm.menuItem( label='psd' )
+pm.menuItem( label='png' )
+pm.menuItem( label='tga' )
+pm.menuItem( label='tif' )
 pm.text(label = '\n ')
 
 pm.frameLayout( label='Specify Output Files' )

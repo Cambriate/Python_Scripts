@@ -44,8 +44,8 @@ def CreateTexAtlas(*args):
     name_v = name.getText() #String - Name of New Texture
     res_v = int(res.getText()) #Int - Target resolution of New Texture
     surfName_v = surfName.getText() #String - Name of New Surface
-    remakeUVs_v = remakeUVs.getSelect() #Bool - T=Recreate UVs for flat colored objects. / F=Keep UVs for flat colored objects 
-    AutoUnwrap_v = AutoUnwrap.getSelect() #Bool - T=Optimize UVs on new surface. / F=Leave UVs atlased on new surface (Creates quilt like pattern).
+    remakeUVs_v = remakeUVs.getSelect() #Bool - T=Optimize UVs on new surface. / F=Leave UVs atlased on new surface (Creates quilt like pattern).
+    AutoUnwrap_v = AutoUnwrap.getSelect() #Bool - T=Recreate UVs for flat colored objects. / F=Keep UVs for flat colored objects 
     oneTex_v = oneTex.getSelect() #Bool - T=Create a Diffuse with Alpha Channel
     twoTex_v = twoTex.getSelect() #Bool - T= Create a Diffuse and Transparancy Texutre
     difTex_v = difTex.getSelect() #Bool - T= Create only Diffuse
@@ -130,31 +130,31 @@ def CreateTexAtlas(*args):
                     
                     
             if(len(allTex) == 0):#There is no Color or Trans material connection. 
-                if(remakeUVs_v):
+                if(AutoUnwrap_v):
                     pm.polyAutoProjection(ObjShape)
 
         except: 
     
-           pass #this will move to the very end     
+           pass #this will move to the very end  
+               
         
-        if not AutoUnwrap_v:
                    
-            #Layout Mesh UVs into a corner
-            pm.polyAutoProjection('UniqueRefPlane')
-            pm.select('UniqueRefPlane', ObjShape)
-            #Determine U & V offsets
-            offsetU = u*uvScale
-            offsetV = v*uvScale
-            
-            
-            #ou and ov are offsets and deal with location. sv and su deal with the size of the uv set
-            pm.polyMultiLayoutUV(sc=1, rbf = 0, lm = 0, l=0, ou = offsetU, ov = offsetV, sv = uvScale, su= uvScale)    
-            
-            if u < (repeatValue-1):
-                u+=1
-            else:
-                u=0
-                v+=1
+        #Layout Mesh UVs into a corner
+        pm.polyAutoProjection('UniqueRefPlane')
+        pm.select('UniqueRefPlane', ObjShape)
+        #Determine U & V offsets
+        offsetU = u*uvScale
+        offsetV = v*uvScale
+        
+        
+        #ou and ov are offsets and deal with location. sv and su deal with the size of the uv set
+        pm.polyMultiLayoutUV(sc=1, rbf = 0, lm = 0, l=0, ou = offsetU, ov = offsetV, sv = uvScale, su= uvScale)    
+        
+        if u < (repeatValue-1):
+            u+=1
+        else:
+            u=0
+            v+=1
         
     #END OF FOR LOOP. Operations on each shape have ended. 
 
@@ -290,14 +290,15 @@ pm.rowColumnLayout( numberOfColumns=2, columnAttach=(1, 'left', 0), columnWidth=
 fileType= pm.optionMenu(label='File Types')
 pm.setParent('..')
 
-pm.menuItem( label='dds' )
-pm.menuItem( label='psd' )
-pm.menuItem( label='png' )
-pm.menuItem( label='tga' )
-pm.menuItem( label='tif' )
+pm.menuItem( label='DDS' )
+pm.menuItem( label='PSD' )
+pm.menuItem( label='PNG' )
+pm.menuItem( label='TGA' )
+pm.menuItem( label='TIF' )
 pm.text(label = '\n ')
 
 pm.frameLayout( label='Specify Output Files' )
+pm.text(label = 'Diffuse with Alpha is recommended for use in game engines with Cutout Transparency Mode.')
 pm.rowLayout( numberOfColumns=3, columnWidth3=(225, 275, 250), adjustableColumn=3, columnAlign=(1, 'both'), columnAttach=[(1, 'left', 0), (2, 'left', 0), (3, 'left', 0)])
 DAButton = pm.radioCollection()
 oneTex = pm.radioButton(label='Diffuse with Alpha - (1 Output Texture)')

@@ -6,7 +6,7 @@ import time
 
 ###################################################################
 '''
-This script is written in Python for use with Maya 2016. It was created by Ivan Spalla and published on 2.2.2016. It is free for use under Creative Commons Licensing.
+This script is written in Python for use with Maya 2016. It was created by Ivan Spalla and published on 3.8.2017. It is free for use under Creative Commons Licensing.
 
 Use this script to combine multiple textures and create a texture atlas. 
 
@@ -183,16 +183,16 @@ def CreateTexAtlas(*args):
  
     #Combine the Textures into one Texture using baking.
     if(oneTex_v): 
-        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, ugn = 1, msd = 0, ss=1, ft=0, mh=res_v, mw=res_v, so=0, fs=1, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Color', max=1, sp='tangent', mm=1, ff='jpg')
-        pm.surfaceSampler(t=surfName_v, mapOutput='alpha', source=shapes, ugn = 1, msd = 0, ss=1, ft=0, mh=res_v, mw=res_v, so=0, fs=1, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Alpha', max=1, sp='tangent', mm=1, ff='jpg')
+        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, msd = 0, ss=0, ft=0, mh=res_v, mw=res_v, so=0, fs=2, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Color', max=1, sp='tangent', mm=0, ff='jpg')
+        pm.surfaceSampler(t=surfName_v, mapOutput='alpha', source=shapes, msd = 0, ss=0, ft=0, mh=res_v, mw=res_v, so=0, fs=2, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Alpha', max=1, sp='tangent', mm=0, ff='jpg')
         mel.eval('system("start "+$s+ "/bin/imconvert "+$Color_P+" "+$Alpha_P+" -compose copy-opacity -composite "+$RGBA_P);')
 
     if(twoTex_v):
-        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, ugn = 1, msd = 0, ss=1, ft=0, mh=res_v, mw=res_v, so=0, fs=1, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Color', max=1, sp='tangent', mm=1, ff=filetype_v)
-        pm.surfaceSampler(t=surfName_v, mapOutput='alpha', source=shapes, ugn = 1, msd = 0, ss=1, ft=0, mh=res_v, mw=res_v, so=0, fs=1, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v +'_Alpha', max=1, sp='tangent', mm=1, ff=filetype_v)
+        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, msd = 0, ss=0, ft=0, mh=res_v, mw=res_v, so=0, fs=2, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v+'_Color', max=1, sp='tangent', mm=0, ff=filetype_v)
+        pm.surfaceSampler(t=surfName_v, mapOutput='alpha', source=shapes, msd = 0, ss=0, ft=0, mh=res_v, mw=res_v, so=0, fs=2, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v +'_Alpha', max=1, sp='tangent', mm=0, ff=filetype_v)
     
     if(difTex_v):
-        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, ugn = 1, msd = 0, ss=1, ft=0, mh=res_v, mw=res_v, so=0, fs=1, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v, max=1, sp='tangent', mm=1, ff=filetype_v)
+        pm.surfaceSampler(t=surfName_v, mapOutput='diffuseRGB', source=shapes, msd = 0, ss=0, ft=0, mh=res_v, mw=res_v, so=0, fs=2, os=1, sm=0, fn=rootDir +'/sourceimages/'+name_v, max=1, mm = 0, sp='tangent', ff=filetype_v)
        
     #Cleanup w/ if statements
     placeNodes = []

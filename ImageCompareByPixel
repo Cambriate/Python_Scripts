@@ -1,0 +1,70 @@
+from PIL import Image
+import numpy
+mask_green = (0, 255, 0)
+#Set Up CSV
+f=open("F:/TexAtlasThesis/Data/Soldier_Originals_vs_Soldier_Atlas_Ivan_OS_1024_imageDiff.txt" , "w+")
+f.write("Current Frame, Non-BKG Pixels, Identical Pixels, Original_R, Original_G, Original_B, Atlas_R, Atlas_G, Atlas_B, Max % Diff Between Pix , Average Diff Between Pix \n")
+
+current_frame = 1
+while current_frame <= 90:
+    print("Working on " + str(current_frame)) 
+    #Changes Per Frame
+    mask_im = Image.open('c:\Temp\Ivan-Thesis\Screenshots\Soldier_Masks_' + str(current_frame) + '.png')
+    atlased_im = Image.open('C:\Temp\Ivan-Thesis\Screenshots\Soldier_Atlas_Ivan_OS_1024_' + str(current_frame) +'.png')
+    original_im = Image.open('C:\Temp\Ivan-Thesis\Screenshots\Soldier_Originals_' + str(current_frame) + '.png')
+                         
+    mask_pixels = list(mask_im.getdata())
+    atlased_pixels = list(atlased_im.getdata())
+    original_pixels = list(original_im.getdata())
+
+    atlased_colored_pixels = []
+    original_colored_pixels = []
+    important_pixels = []
+
+    percent_diffs_between_pixs = []
+
+    count_identical_pixels = 0
+    pix_id = 0
+                         
+    for mask_pixel in mask_pixels:
+        if mask_pixel == mask_green:
+            important_pixels.append(pix_id)
+            atlased_colored_pixels.append(atlased_pixels[pix_id])
+            original_colored_pixels.append(original_pixels[pix_id])
+
+        pix_id += 1
+                         
+            
+    print (len(atlased_colored_pixels))
+    print(len(original_colored_pixels))
+    i = 0
+    #while i < len(atlased
+    for important_pixel in important_pixels:
+
+        RGB_difference = tuple(numpy.subtract(atlased_colored_pixels[i] , original_colored_pixels[i]))
+
+        Abs_RGB_difference = (numpy.absolute(RGB_difference))
+
+        Percent_Difference = sum(Abs_RGB_difference)/float(768)
+        if Percent_Difference == 0:
+            count_identical_pixels += 1
+        percent_diffs_between_pixs.append(Percent_Difference)
+        i +=1
+
+    N = float(len(atlased_colored_pixels))
+    average_a_pix =  (sum(a[0] for a in atlased_colored_pixels)/N,
+            sum(a[1] for a in atlased_colored_pixels)/N,
+            sum(a[2] for a in atlased_colored_pixels)/N)
+
+    average_o_pix =  (sum(o[0] for o in original_colored_pixels)/N,
+            sum(o[1] for o in original_colored_pixels)/N,
+            sum(o[2] for o in original_colored_pixels)/N)
+
+    #Get Stats Per Frame
+    f.write(str(current_frame) + "," + str(len(atlased_colored_pixels)) + "," + str(count_identical_pixels) + "," +str(average_o_pix[0]) + "," + str(average_o_pix[1]) + "," + str(average_o_pix[2]) + "," + str(average_a_pix[0]) + "," + str(average_a_pix[1]) + "," + str(average_a_pix[2]) + "," + str(max(percent_diffs_between_pixs)) + "," + str(numpy.mean(percent_diffs_between_pixs)) + "\n")
+    #print(str(current_frame) + "," + str(len(atlased_colored_pixels)) + "," + str(count_identical_pixels) + "," + str(max(percent_diffs_between_pixs)) + "," + str(numpy.mean(percent_diffs_between_pixs)) + "\n")
+
+    current_frame += 1
+f.close()
+
+

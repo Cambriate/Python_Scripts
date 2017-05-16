@@ -1,0 +1,332 @@
+from __future__ import print_function
+import sys
+sys.path.append("P:/TG/ThemGreeks/Library/maya/python")
+sys.path.append("P:/TG/ThemGreeks/Library/python")
+sys.path.append("P:/TG/ThemGreeks/Library/python/site-packages")
+from shotgun_api3 import Shotgun
+import svnWrapper as SVN
+import json
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import httplib2
+import os
+
+from apiclient import discovery
+import oauth2client
+from oauth2client import client
+from oauth2client import tools
+
+try:
+    import argparse
+    flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
+except ImportError:
+    flags = None
+#SHOTGUN
+SERVER_PATH = 'https://YOUR_COMPANY.shotgunstudio.com'
+SCRIPT_NAME = 'YOUR_SCRIPT_NAME'
+SCRIPT_KEY = 'YOUR_SCRIPT_KEY'
+THEMGREEKS_PROJ_ID = PROJECT_ID
+PersonID = 1
+PersonID = 2
+PersonID = 3
+sg = Shotgun(SERVER_PATH, SCRIPT_NAME, SCRIPT_KEY)
+
+#SVN
+svnPath = 'F:/ThemGreeks'
+
+#GSPREAD
+scope = ['https://spreadsheets.google.com/feeds']
+credentials_gspread = ServiceAccountCredentials.from_json_keyfile_name('P:/TG/Standalone_Tools/Credientials.json', scope)
+gc = gspread.authorize(credentials_gspread)
+RW_wks = gc.open("WorkBook").worksheet('Spread Sheet')
+
+#DRIVE
+SCOPES = 'https://www.googleapis.com/auth/drive'
+CLIENT_SECRET_FILE = 'client_secret.json'
+APPLICATION_NAME = 'Drive API Python Quickstart'
+def get_credentials():
+    """Gets valid user credentials from storage.
+
+    If nothing has been stored, or if the stored credentials are invalid,
+    the OAuth2 flow is completed to obtain the new credentials.
+
+    Returns:
+        Credentials, the obtained credential.
+    """
+    home_dir = os.path.expanduser('~')
+    credential_dir = os.path.join(home_dir, '.credentials')
+    if not os.path.exists(credential_dir):
+        os.makedirs(credential_dir)
+    credential_path = os.path.join(credential_dir,
+                                   'drive-python-quickstart.json')
+    print(credential_path)
+    store = oauth2client.file.Storage(credential_path)
+    credentials = store.get()
+    if not credentials or credentials.invalid:
+        flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
+        flow.user_agent = APPLICATION_NAME
+        if flags:
+            credentials = tools.run_flow(flow, store, flags)
+        else: # Needed only for compatibility with Python 2.6
+            credentials = tools.run(flow, store)
+        print('Storing credentials to ' + credential_path)
+    return credentials
+
+
+credentials = get_credentials()
+http = credentials.authorize(httplib2.Http())
+service = discovery.build('drive', 'v3', http=http)
+TGR_Lighting_Folder_ID = '0B6K9r12sy6V_fll2ZlNMbUE2WDlVYkJrN0h5RHlPTF9tamNndDU3MWJreERJU0VxbEkzdnM'
+###########################################################################
+
+class RenderHelper():
+
+    def get_current_frame(self):
+        task_cell_list = RW_wks.range('F3:F' +str(RW_wks.row_count) )
+
+        for cell in task_cell_list:
+            taskID = cell.value
+            #print(RW_wks.cell(int(cell.row), 12).value)
+            if(RW_wks.cell(int(cell.row), 12).value != 'aprvd'):
+                #update number of frames
+                GoogleDriveFolderID = RW_wks.cell(int(cell.row),24).value[39:]
+                #print (GoogleDriveFolderID)
+                renderedFrames = service.files().list(q = "'{0}' in parents".format(GoogleDriveFolderID, "mimeType = 'application/vnd.google-apps.photo'")).execute()
+                RW_wks.update_cell(cell.row, 26, str(len(renderedFrames['files'])))
+                print("got current frame")
+
+
+    def update_review_status(self):
+        print("update review status")
+        task_cell_list = RW_wks.range('F3:F' +str(RW_wks.row_count) )
+
+        for cell in task_cell_list:
+            taskID = cell.value
+            #print(RW_wks.cell(int(cell.row), 12).value)
+            if(RW_wks.cell(int(cell.row), 14).value == '' and (RW_wks.cell(int(cell.row), 12).value == 'ip') or RW_wks.cell(int(cell.row), 12).value == 'rev'):
+                #check how many frames are there
+                if(RW_wks.cell(int(cell.row),26).value > 3):
+                    RW_wks.update_cell(cell.row, 14, 'x')
+                    #mark as ready for render ok
+
+            if(RW_wks.cell(int(cell.row),16).value == '' and (RW_wks.cell(int(cell.row), 12).value == 'ip' or RW_wks.cell(int(cell.row),12).value == 'rev')):
+               if(RW_wks.cell(int(cell.row),26).value >= RW_wks.cell(int(cell.row), 27).value):
+                   RW_wks.update_cell(cell.row, 16, 'x')
+                   #mark as ready for full review
+
+               
+
+
+    def get_current_task_status(self):
+        task_cell_list = RW_wks.range('F3:F' +str(RW_wks.row_count) )
+
+        for cell in task_cell_list:
+            taskID = cell.value
+            if(RW_wks.cell(int(cell.row), 12).value != 'aprvd'):
+                #get status from shotgun
+                sg_status  = sg.find_one('Task',
+                            [['id', 'is', int(taskID)]],
+                            ['sg_status_list'])
+                            
+                
+                RW_wks.update_cell(cell.row, 12, sg_status['sg_status_list'])
+        print("got statuses")
+
+    def get_assignees(self):
+        print("getting assignees")
+        '''
+            task_cell_list = RW_wks.range('F3:F' +str(RW_wks.row_count) )
+
+        for cell in task_cell_list:
+            taskID = cell.value
+            if(RW_wks.cell(int(cell.row), 8).value == ''):
+                #get status from shotgun
+                sg_assignee  = sg.find_one('Task',
+                            [['id', 'is', int(taskID)]],
+                            ['task_assignees'])
+
+                asignee = sg_assignee['task_assignees'][0]
+                print(asignee)
+                #RW_wks.update_cell(cell.row, 12, sg_assignee['task_assignees'][0])
+                '''
+        task_cell_list = RW_wks.range('F3:F' +str(RW_wks.row_count) )
+
+        for cell in task_cell_list:
+            taskID = cell.value
+            if(RW_wks.cell(int(cell.row), 8).value == ''):
+                
+                sg_assignee  = sg.find_one('Task',
+                                [['id', 'is', int(taskID)]],
+                                ['task_assignees'])
+                try:
+                    if(len(sg_assignee['task_assignees'])> 0):  #if there is an asignee_name update the cell, create a reply note on the note assigning the person
+                        assignee_name = sg_assignee['task_assignees'][0]['name']
+                        assigneeID = sg_assignee['task_assignees'][0]['id']
+
+                        #sg.update('Task', int(taskID),  {'sg_status_list':'ip'})
+                        RW_wks.update_cell(cell.row, 8, assignee_name)
+
+                        #get NoteID from the spreadsheet
+                        replyNoteID = int(RW_wks.cell(cell.row, 25).value[49:])
+
+                        #post a reply
+                        
+                        dataReply = {
+                             'entity':{'type':'Note','id': replyNoteID},
+                             'content':'Renderer: ' + assignee_name 
+                        }
+                        sg.create("Reply", dataReply)
+                        
+                        #add person to note
+                        note_cc = sg.find_one("Note", [['id', 'is', replyNoteID]], ['addressings_cc'])
+                        if{'type': 'HumanUser', 'id': assigneeID, 'name': assignee_name} not in note_cc['addressings_cc']:
+                            note_cc['addressings_cc'].append({'type': 'HumanUser', 'id': assigneeID})
+                            dataUpdateNote = {
+                                'addressings_cc' : note_cc['addressings_cc']
+                            }
+                            sg.update('Note', replyNoteID, dataUpdateNote)
+                except:
+                    print("Task Not Found")
+                    print(sg_assignee)
+                    pass
+                
+
+
+    def create_new_tasks(self):
+        print("creating new tasks")
+        for TaskName in self.TaskNames:
+            #Create new task for each render layer
+            data_task = {
+                        'project': {'type': 'Project', 'id': THEMGREEKS_PROJ_ID},
+                        'content': TaskName, #TaskName,
+                        'step': {'type': 'Step', 'id': 7},
+                        'entity':{'type': 'Shot', 'id': self.shot_id}} 
+                               
+            newTask = sg.create('Task', data_task)
+            taskID = newTask['id']
+            sg.update('Task', taskID, {'sg_status_list':'rdy'})
+            #Find and declare participants
+            LightersTask = sg.find_one('Task',
+                                        [['step', 'is', {'type': 'Step', 'id': 41}],
+                                        ['entity', 'is', {'type':'Shot', 'id': self.shot_id}]],
+                                        ['task_assignees']) #name of task is located in content
+
+            SupervisorID = LightersTask['task_assignees'][0]['id']
+            SupervisorName = LightersTask['task_assignees'][0]['name']
+
+            #Create new note for each task
+            if('_col' in TaskName):
+                NotesNote_txt = 'Check the Ambient Occlusion box under Features in Render Settings'
+            else:
+                NotesNote_txt = '   NA   '
+
+            data = { 'project': {'type':'Project','id':THEMGREEKS_PROJ_ID},
+                    'user': {'type':'HumanUser', 'id': Person1ID},
+                    'addressings_to': [{'type': 'HumanUser', 'id' : SupervisorID }],
+                    'tasks':[{'type': 'Task', 'id' : taskID}],
+                    'addressings_cc': [{'type' : 'HumanUser', 'id' : Person1ID},
+                                       {'type' : 'HumanUser', 'id' : Person2ID},
+                                       {'type' : 'HumanUser', 'id' : Person3ID}],
+                    'content' : 'Frames: '+ str(self.start_frame) + ' - ' + str(self.end_frame) +
+                    ' \n Layer: ' + TaskName + '\n Supervisor: ' + SupervisorName + '\n Notes: ' + NotesNote_txt ,
+                    'subject': 'Lighting Render for '+TaskName+ ' for Shot '+self.shotcode}
+            result = sg.create('Note', data)
+            noteID = result['id']
+
+            noteURL = 'https://themgreeks.shotgunstudio.com/detail/Note/'+str(noteID)
+
+
+
+            sequenceFolders = service.files().list(q = "'{0}' in parents".format(TGR_Lighting_Folder_ID, "mimeType = 'application/vnd.google-apps.folder'")).execute()
+
+            for sequenceFolder in sequenceFolders['files']:
+                if(sequenceFolder['name'] == self.sequence):
+                    SequenceFolderID = sequenceFolder['id']
+
+                    shotFolders = service.files().list(q = "'{0}' in parents".format(SequenceFolderID, "mimeType = 'application/vnd.google-apps.folder'")).execute()
+                    for shotFolder in shotFolders['files']:
+                        if(shotFolder['name'] == self.shotcode):
+                            ShotFolderID = shotFolder['id']
+                            if(ShotFolderID):
+                                #for each taskname in tasknames, create new folder and move it to under the shot folderID
+
+                                                
+                                #Create New Folder
+                                file_metadata = {
+                                            'name' : TaskName,
+                                            'mimeType' : 'application/vnd.google-apps.folder'
+                                                 }
+                                file = service.files().create(body=file_metadata, fields = 'id').execute()
+                                TaskLayerFolderID = file.get('id')
+                                                
+
+                                #Move New Folder
+                                folder = service.files().get(fileId = TaskLayerFolderID, fields= 'parents').execute()
+                                previous_parents = ','.join(folder.get('parents'))
+
+                                folder = service.files().update(fileId = TaskLayerFolderID,
+                                                                        addParents = ShotFolderID,
+                                                                        removeParents = previous_parents,
+                                                                        fields = 'id, parents').execute()
+                                                    
+                                #Update Spreadsheet with URL
+                                driveURL = 'https://drive.google.com/drive/folders/'+ file.get('id')
+
+
+                                RW_wks.append_row([self.shotcode, self.start_frame, self.end_frame, TaskName, 'Lighting', taskID, 'TBI',
+                                                                '',  'Wrangler', SupervisorName, 'Available', 'Get Status from SG','', '', '', '', '',
+                                                                'Drive Status','', '', '', '','', driveURL, noteURL ])
+                                break
+            
+                       
+    def find_render_ready_to_start(self):
+        print("finding renders ready to start")
+        renders_ready_to_start = sg.find('Task',
+                                   [['step', 'is', {'type': 'Step', 'id': 7}], #['step.Step.short_name', 'is', 'FXSim']
+                                    ['content', 'is', 'Lighting Rendering'], #this is just the thing we should omit
+                                    ['sg_status_list', 'is', 'rdy']],
+                                   ['entity']) #name of task is located in content
+
+        for render_ready_to_start in renders_ready_to_start:
+            #if(lighting):
+            self.lightrenderID = render_ready_to_start['id']
+            #else:
+             #   fx_name = render_ready_to_start['content']
+            self.shotcode = render_ready_to_start['entity']['name']
+            self.sequence = self.shotcode[:3]
+            self.shot_num = self.shotcode[3:] #number
+            self.shot_id = render_ready_to_start['entity']['id']
+            self.shot_data = sg.find_one("Shot", [['id', 'is', self.shot_id]], ['sg_cut_in', 'sg_cut_out'])
+            self.start_frame = self.shot_data['sg_cut_in']
+            self.end_frame = self.shot_data['sg_cut_out']
+            #if(lighting):
+            renderFilePath = "%s/Lighting/%s/%s/%s.%s.lighting.ma" % (svnPath, self.sequence, self.shotcode, self.sequence, self.shot_num)
+           
+            SVN.update(renderFilePath)
+
+            #find render layers/potential tasks
+            self.TaskNames = []
+            with open(renderFilePath) as data_file:
+                for line in data_file:
+                    if "createNode renderLayer -n" in line:
+                        if "defaultRenderLayer" not in line:
+                            if "TEST" not in line:
+                                if "sanityCheck" not in line:
+                                    self.TaskName = line[line.find('-n "')+len('-n "'):line.find('";')].strip()
+                                    self.TaskNames.append(self.TaskName)
+            sg.update('Task', self.lightrenderID, {'sg_status_list':'ip'})
+            self.create_new_tasks()
+           
+            
+                
+
+
+if __name__ == "__main__":
+    rh = RenderHelper()
+    rh.find_render_ready_to_start()
+    print("starting at all")
+    rh.get_assignees()
+    rh.get_current_task_status()
+    rh.get_current_frame()
+    rh.update_review_status()
+

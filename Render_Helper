@@ -38,7 +38,7 @@ svnPath = 'F:/ThemGreeks'
 scope = ['https://spreadsheets.google.com/feeds']
 credentials_gspread = ServiceAccountCredentials.from_json_keyfile_name('P:/TG/Standalone_Tools/Credientials.json', scope)
 gc = gspread.authorize(credentials_gspread)
-RW_wks = gc.open("WorkBook").worksheet('Spread Sheet')
+RW_wks = gc.open("WORKBOOK").worksheet('SPREADSHEET')
 
 #DRIVE
 SCOPES = 'https://www.googleapis.com/auth/drive'
@@ -76,24 +76,30 @@ def get_credentials():
 credentials = get_credentials()
 http = credentials.authorize(httplib2.Http())
 service = discovery.build('drive', 'v3', http=http)
-TGR_Lighting_Folder_ID = '0B6K9r12sy6V_fll2ZlNMbUE2WDlVYkJrN0h5RHlPTF9tamNndDU3MWJreERJU0VxbEkzdnM'
+TGR_Lighting_Folder_ID = 'RENDER_DIRECTORY_ID'
 ###########################################################################
 
 class RenderHelper():
 
-    def get_current_frame(self):
+ def get_current_frame(self):
         task_cell_list = RW_wks.range('F3:F' +str(RW_wks.row_count) )
 
         for cell in task_cell_list:
             taskID = cell.value
             #print(RW_wks.cell(int(cell.row), 12).value)
-            if(RW_wks.cell(int(cell.row), 12).value != 'aprvd'):
+            if(RW_wks.cell(int(cell.row), 12).value != 'aprvd' or RW_wks.cell(int(cell.row), 20).value == '!'):
                 #update number of frames
                 GoogleDriveFolderID = RW_wks.cell(int(cell.row),24).value[39:]
-                #print (GoogleDriveFolderID)
-                renderedFrames = service.files().list(q = "'{0}' in parents".format(GoogleDriveFolderID, "mimeType = 'application/vnd.google-apps.photo'")).execute()
-                RW_wks.update_cell(cell.row, 26, str(len(renderedFrames['files'])))
-                print("got current frame")
+                folderContents = service.files().list(pageSize = 1000, fields="files(id, name, size, fileExtension)", q = "'{0}' in parents".format('0B-MF0xWOYMI8SVNoQ015Ymh4ajg')).execute()
+
+                completedRenders = []
+                for file in folderContents['files']:
+                    if(file.get("size")):
+                        if(int(file.get("size")) > 128 and str(file.get("fileExtension")) == "exr"):
+                            completedRenders.append(file)
+                
+                RW_wks.update_cell(cell.row, 26, str(len(completedRenders))))
+
 
 
     def update_review_status(self):

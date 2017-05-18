@@ -90,7 +90,7 @@ class RenderHelper():
             if(RW_wks.cell(int(cell.row), 12).value != 'aprvd' or RW_wks.cell(int(cell.row), 20).value == '!'):
                 #update number of frames
                 GoogleDriveFolderID = RW_wks.cell(int(cell.row),24).value[39:]
-                folderContents = service.files().list(pageSize = 1000, fields="files(id, name, size, fileExtension)", q = "'{0}' in parents".format('0B-MF0xWOYMI8SVNoQ015Ymh4ajg')).execute()
+                folderContents = service.files().list(pageSize = 1000, fields="files(id, name, size, fileExtension)", q = "'{0}' in parents".format(GoogleDriveFolderID)).execute()
 
                 completedRenders = []
                 for file in folderContents['files']:
